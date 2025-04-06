@@ -1,237 +1,70 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "./styles.css";
 
 export default function App() {
-  const [tasks, setTasks] = useState(() => {
-    const savedTasks = localStorage.getItem("tasks");
-    return savedTasks ? JSON.parse(savedTasks) : [];
-  });
-  
-  const [filter, setFilter] = useState("all");
-
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
-
-  function addTask(newTask) {
-    if(newTask.text.trim() === "") return;
-    setTasks((prevTasks) => [...prevTasks, newTask]);
-  }
-
-  function deleteTask(deletedTask) {
-    setTasks((prevTasks) =>
-      prevTasks.filter((task) => task.id !== deletedTask.id)
-    );
-  }
-
-  function toggleTask(task) {
-    setTasks((prevTasks) =>
-      prevTasks.map((t) => {
-        if (t.id !== task.id) return t;
-        return { ...t, isCompleted: !t.isCompleted };
-      })
-    );
-  }
-
-  function editTask(taskId, newText) {
-    if(newText.trim() === "") return;
-    setTasks((prevTasks) =>
-      prevTasks.map((t) => {
-        if (t.id !== taskId) return t;
-        return { ...t, text: newText };
-      })
-    );
-  }
-
-  function clearCompleted() {
-    setTasks((prevTasks) => prevTasks.filter((task) => !task.isCompleted));
-  }
-
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === "active") return !task.isCompleted;
-    if (filter === "completed") return task.isCompleted;
-    return true;
-  });
-
   return (
-    <div className="todo-app">
-      <Header />
-      <div className="container">
-        <ToDoForm onAddTask={addTask} />
-        <FilterButtons filter={filter} onFilterChange={setFilter} />
-        <ToDoList
-          tasks={filteredTasks}
-          onDeleteTask={deleteTask}
-          onToggleTask={toggleTask}
-          onEditTask={editTask}
-        />
-        {tasks.length > 0 && (
-          <div className="clear-completed">
-            <button onClick={clearCompleted} className="btn-clear">
-              Clear completed
-            </button>
-          </div>
-        )}
-        <Footer tasks={tasks} />
-      </div>
+    <div>
+      <TextExpander>
+        Space travel is the ultimate adventure! Imagine soaring past the stars
+        and exploring new worlds. It's the stuff of dreams and science fiction,
+        but believe it or not, space travel is a real thing. Humans and robots
+        are constantly venturing out into the cosmos to uncover its secrets and
+        push the boundaries of what's possible.
+      </TextExpander>
+
+      <TextExpander
+        collapsedNumWords={20}
+        expandButtonText="Show text"
+        collapseButtonText="Collapse text"
+        buttonColor="#ff6622"
+      >
+        Space travel requires some seriously amazing technology and
+        collaboration between countries, private companies, and international
+        space organizations. And while it's not always easy (or cheap), the
+        results are out of this world. Think about the first time humans stepped
+        foot on the moon or when rovers were sent to roam around on Mars.
+      </TextExpander>
+
+      <TextExpander expanded={true} className="box">
+        Space missions have given us incredible insights into our universe and
+        have inspired future generations to keep reaching for the stars. Space
+        travel is a pretty cool thing to think about. Who knows what we'll
+        discover next!
+      </TextExpander>
     </div>
   );
 }
 
-function ToDoForm({ onAddTask }) {
-  const [inputValue, setInputValue] = useState("");
+function TextExpander({
+  collapsedNumWords = 10,
+  expandButtonText = "Show more",
+  collapseButtonText = "Show less",
+  buttonColor = "#1f09cd",
+  expanded = false,
+  className,
+  children,
+}) {
+  const [isExpanded, setIsExpanded] = useState(expanded);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    onAddTask({ id: Date.now(), text: inputValue, isCompleted: false });
-    setInputValue("");
+  const displayText = isExpanded
+    ? children
+    : children.split(" ").slice(0, collapsedNumWords).join(" ") + "...";
+
+  const buttonStyle = {
+    background: "none",
+    border: "none",
+    font: "inherit",
+    cursor: "pointer",
+    marginLeft: "6px",
+    color: buttonColor,
   };
 
   return (
-    <form onSubmit={handleSubmit} className="todo-form">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder="What needs to be done?"
-        className="todo-input"
-      />
-      <button type="submit" className="btn-add">Add</button>
-    </form>
-  );
-}
-
-function FilterButtons({ filter, onFilterChange }) {
-  return (
-    <div className="filter-buttons">
-      <button
-        className={filter === "all" ? "active" : ""}
-        onClick={() => onFilterChange("all")}
-      >
-        All
-      </button>
-      <button
-        className={filter === "active" ? "active" : ""}
-        onClick={() => onFilterChange("active")}
-      >
-        Active
-      </button>
-      <button
-        className={filter === "completed" ? "active" : ""}
-        onClick={() => onFilterChange("completed")}
-      >
-        Completed
+    <div className={className}>
+      <span>{displayText}</span>
+      <button onClick={() => setIsExpanded((exp) => !exp)} style={buttonStyle}>
+        {isExpanded ? collapseButtonText : expandButtonText}
       </button>
     </div>
-  );
-}
-
-function ToDoList({ tasks, onDeleteTask, onToggleTask, onEditTask }) {
-  return (
-    <ul className="todo-list">
-      {tasks.length === 0 ? (
-        <p className="empty-message">No tasks to display</p>
-      ) : (
-        tasks.map((task) => (
-          <ToDoItem
-            key={task.id}
-            task={task}
-            onDeleteTask={onDeleteTask}
-            onToggleTask={onToggleTask}
-            onEditTask={onEditTask}
-          />
-        ))
-      )}
-    </ul>
-  );
-}
-
-function ToDoItem({ task, onDeleteTask, onToggleTask, onEditTask }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.text);
-
-  const handleEdit = () => {
-    onEditTask(task.id, editText);
-    setIsEditing(false);
-  };
-
-  return (
-    <li className={`todo-item ${task.isCompleted ? "completed" : ""}`}>
-      <div className="todo-item-content">
-        <input
-          type="checkbox"
-          checked={task.isCompleted}
-          onChange={() => onToggleTask(task)}
-          className="todo-checkbox"
-        />
-        
-        {isEditing ? (
-          <div className="edit-form">
-            <input
-              type="text"
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              className="edit-input"
-              autoFocus
-            />
-            <button onClick={handleEdit} className="btn-save">
-              Save
-            </button>
-            <button onClick={() => setIsEditing(false)} className="btn-cancel">
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <span 
-            className="todo-text" 
-            onDoubleClick={() => setIsEditing(true)}
-          >
-            {task.text}
-          </span>
-        )}
-      </div>
-      
-      <div className="todo-item-actions">
-        {!isEditing && (
-          <>
-            <button onClick={() => setIsEditing(true)} className="btn-edit">
-              Edit
-            </button>
-            <button onClick={() => onDeleteTask(task)} className="btn-delete">
-              Delete
-            </button>
-          </>
-        )}
-      </div>
-    </li>
-  );
-}
-
-function Header() {
-  return (
-    <header className="header">
-      <h1>Todo App</h1>
-    </header>
-  );
-}
-
-function Footer({ tasks }) {
-  const completedTasks = tasks.filter((task) => task.isCompleted).length;
-  const totalTasks = tasks.length;
-  
-  return (
-    <footer className="footer">
-      <p>
-        {completedTasks} of {totalTasks} tasks completed
-      </p>
-      {totalTasks > 0 && (
-        <p className="progress">
-          <span 
-            className="progress-bar" 
-            style={{ width: `${(completedTasks / totalTasks) * 100}%` }}
-          ></span>
-        </p>
-      )}
-    </footer>
   );
 }
